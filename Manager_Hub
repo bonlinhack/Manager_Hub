@@ -1,0 +1,202 @@
+-- Dịch vụ
+local RunService = game:GetService("RunService")
+local Players = game:GetService("Players")
+local TweenService = game:GetService("TweenService")
+local UserInputService = game:GetService("UserInputService")
+local LocalPlayer = Players.LocalPlayer
+local playerGui = LocalPlayer:WaitForChild("PlayerGui")
+
+-- GUI chính
+local nameHub = Instance.new("ScreenGui")
+nameHub.Name = "NameHub"
+nameHub.Parent = playerGui
+nameHub.DisplayOrder = 100
+nameHub.ResetOnSpawn = false
+
+-- Frame chính
+local mainFrame = Instance.new("Frame")
+mainFrame.Parent = nameHub
+mainFrame.Size = UDim2.new(0.3, 0, 0.45, 0)
+mainFrame.Position = UDim2.new(0.5, 0, 0.1, 0)
+mainFrame.BackgroundColor3 = Color3.fromRGB(30, 30, 30)
+mainFrame.BackgroundTransparency = 0.2
+mainFrame.BorderSizePixel = 0
+mainFrame.AnchorPoint = Vector2.new(0.5, 0.5)
+mainFrame.Active = true
+mainFrame.Draggable = true
+
+local corner = Instance.new("UICorner", mainFrame)
+corner.CornerRadius = UDim.new(0, 10)
+
+-- Tiêu đề
+local titleLabel = Instance.new("TextLabel")
+titleLabel.Parent = mainFrame
+titleLabel.Size = UDim2.new(1, 0, 0.15, 0)
+titleLabel.Position = UDim2.new(0, 0, 0, 0)
+titleLabel.BackgroundTransparency = 1
+titleLabel.Font = Enum.Font.FredokaOne
+titleLabel.TextScaled = true
+titleLabel.TextStrokeTransparency = 0
+titleLabel.TextColor3 = Color3.fromRGB(255, 255, 120)
+titleLabel.Text = "📋 Manage Hub UI."
+
+-- Ẩn tên
+local function hideName(name)
+	local visibleLength = 4
+	local hiddenLength = #name - 5
+	local hiddenPart = string.rep("*", hiddenLength)
+	return string.sub(name, 1, visibleLength) .. hiddenPart .. string.sub(name, -1)
+end
+
+-- Tên người chơi
+local nameLabel = Instance.new("TextLabel")
+nameLabel.TextColor3 = Color3.fromRGB(255, 100, 100) -- đỏ nhạt
+nameLabel.Parent = mainFrame
+nameLabel.Size = UDim2.new(1, 0, 0.15, 0)
+nameLabel.Position = UDim2.new(0, 0, 0.15, 0)
+nameLabel.BackgroundTransparency = 1
+nameLabel.Font = Enum.Font.FredokaOne
+nameLabel.TextScaled = true
+nameLabel.TextStrokeTransparency = 0
+nameLabel.Text = "👤 Tên: " .. hideName(LocalPlayer.Name)
+
+-- FPS
+local fpsLabel = Instance.new("TextLabel")
+fpsLabel.Parent = mainFrame
+fpsLabel.Size = UDim2.new(1, 0, 0.15, 0)
+fpsLabel.Position = UDim2.new(0, 0, 0.3, 0)
+fpsLabel.BackgroundTransparency = 1
+fpsLabel.Font = Enum.Font.FredokaOne
+fpsLabel.TextScaled = true
+fpsLabel.TextStrokeTransparency = 0
+fpsLabel.Text = "FPS: 0"
+
+-- Thời gian server
+local timeLabel = Instance.new("TextLabel")
+timeLabel.Parent = mainFrame
+timeLabel.Size = UDim2.new(1, 0, 0.15, 0)
+timeLabel.Position = UDim2.new(0, 0, 0.45, 0)
+timeLabel.BackgroundTransparency = 1
+timeLabel.Font = Enum.Font.FredokaOne
+timeLabel.TextScaled = true
+timeLabel.TextStrokeTransparency = 0
+timeLabel.TextColor3 = Color3.fromRGB(0, 255, 0)
+timeLabel.Text = "🔴 Thời gian ở trong máy chủ: 0s"
+
+-- Cập nhật FPS + Thời gian
+local frameCount, lastUpdate, hue = 0, tick(), 0
+local startTime = tick()
+RunService.RenderStepped:Connect(function()
+	frameCount += 1
+	local now = tick()
+	if now - lastUpdate >= 1 then
+		local fps = frameCount / (now - lastUpdate)
+		frameCount = 0
+		lastUpdate = now
+		fpsLabel.Text = string.format("FPS: %d", math.floor(fps))
+	end
+	local elapsed = math.floor(tick() - startTime)
+	local h = math.floor(elapsed / 3600)
+	local m = math.floor((elapsed % 3600) / 60)
+	local s = elapsed % 60
+	timeLabel.Text = string.format("🔴 Thời gian ở trong máy chủ: %02d:%02d:%02d", h, m, s)
+	hue = (hue + 0.005) % 1
+	fpsLabel.TextColor3 = Color3.fromHSV(hue, 1, 1)
+end)
+
+-- Đơn
+local jobFrame = Instance.new("Frame")
+jobFrame.Parent = mainFrame
+jobFrame.Size = UDim2.new(1, 0, 0.15, 0)
+jobFrame.Position = UDim2.new(0, 0, 0.6, 0)
+jobFrame.BackgroundTransparency = 1
+
+local jobTitle = Instance.new("TextLabel")
+jobTitle.Parent = jobFrame
+jobTitle.Size = UDim2.new(0.3, 0, 1, 0)
+jobTitle.Position = UDim2.new(0, 0, 0, 0)
+jobTitle.BackgroundTransparency = 1
+jobTitle.TextColor3 = Color3.fromRGB(255, 223, 88)
+jobTitle.TextScaled = true
+jobTitle.Font = Enum.Font.GothamBold
+jobTitle.Text = "📌 Đơn :"
+
+local jobBox = Instance.new("TextBox")
+jobBox.Parent = jobFrame
+jobBox.Size = UDim2.new(0.7, 0, 1, 0)
+jobBox.Position = UDim2.new(0.3, 0, 0, 0)
+jobBox.BackgroundTransparency = 1
+jobBox.TextColor3 = Color3.fromRGB(255, 255, 255)
+jobBox.TextScaled = true
+jobBox.Font = Enum.Font.GothamBold
+jobBox.Text = ""
+jobBox.ClearTextOnFocus = false
+jobBox.TextWrapped = true
+
+-- Lưu Đơn
+jobBox.FocusLost:Connect(function(enterPressed)
+	if enterPressed and jobBox.Text ~= "" then
+		writefile("don.txt", jobBox.Text)
+	end
+end)
+
+-- Load lại nếu có
+if isfile("don.txt") then
+	local savedJob = readfile("don.txt")
+	if savedJob and savedJob ~= "" then
+		jobBox.Text = savedJob
+	end
+end
+
+-- 🔘 Toggle GUI button
+local toggleButton = Instance.new("TextButton")
+toggleButton.Name = "ToggleButton"
+toggleButton.Parent = nameHub
+toggleButton.Size = UDim2.new(0, 40, 0, 40)
+toggleButton.Position = UDim2.new(1, -50, 0, 10)
+toggleButton.AnchorPoint = Vector2.new(0, 0)
+toggleButton.BackgroundColor3 = Color3.fromRGB(60, 60, 60)
+toggleButton.TextColor3 = Color3.fromRGB(255, 255, 255)
+toggleButton.Font = Enum.Font.GothamBold
+toggleButton.Text = "❌"
+toggleButton.TextScaled = true
+toggleButton.BorderSizePixel = 0
+toggleButton.Active = true
+toggleButton.Draggable = true
+
+-- Bo góc
+local toggleCorner = Instance.new("UICorner", toggleButton)
+toggleCorner.CornerRadius = UDim.new(1, 0)
+
+-- Animation hover
+local hoverTween = TweenService:Create(toggleButton, TweenInfo.new(0.15), {
+	BackgroundColor3 = Color3.fromRGB(90, 90, 90),
+	Size = UDim2.new(0, 45, 0, 45)
+})
+local leaveTween = TweenService:Create(toggleButton, TweenInfo.new(0.15), {
+	BackgroundColor3 = Color3.fromRGB(60, 60, 60),
+	Size = UDim2.new(0, 40, 0, 40)
+})
+
+toggleButton.MouseEnter:Connect(function()
+	hoverTween:Play()
+end)
+toggleButton.MouseLeave:Connect(function()
+	leaveTween:Play()
+end)
+
+-- Toggle
+local guiVisible = true
+local function toggleGUI()
+	guiVisible = not guiVisible
+	mainFrame.Visible = guiVisible
+	toggleButton.Text = guiVisible and "❌" or "✅"
+end
+toggleButton.MouseButton1Click:Connect(toggleGUI)
+
+-- Phím G để tắt/mở
+UserInputService.InputBegan:Connect(function(input, gp)
+	if not gp and input.KeyCode == Enum.KeyCode.G then
+		toggleGUI()
+	end
+end)
